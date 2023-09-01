@@ -63,6 +63,7 @@ class MainDialog(QDialog):
         ]]
 
         self.ui.recent_servers.currentIndexChanged.connect(self._on_cur_server_changed)
+        self.ui.graph_visible_interval.currentIndexChanged.connect(self._change_graph_visible_interval)
 
         # start/stop + exit
         self.ui.start_stop.clicked.connect(self._start_ping)
@@ -95,23 +96,32 @@ class MainDialog(QDialog):
 
         self.ui.recent_servers.addItems(servers)
 
+        self._init_graph_visible_interval()
         self._init_graph_view()
         self._init_about_program()
+
+    def _init_graph_visible_interval(self):
+        self.ui.graph_visible_interval.addItem('1 min', 60)
+        self.ui.graph_visible_interval.addItem('5 mins', 5 * 60)
+        self.ui.graph_visible_interval.addItem('10 mins', 10 * 60)
+        self.ui.graph_visible_interval.addItem('15 mins', 15 * 60)
+        self.ui.graph_visible_interval.addItem('30 mins', 30 * 60)
+        self.ui.graph_visible_interval.addItem('1 hour', 60 * 60)
+        self.ui.graph_visible_interval.addItem('6 hours', 6 * 60 * 60)
+        self.ui.graph_visible_interval.addItem('12 hours', 12 * 60 * 60)
+        self.ui.graph_visible_interval.addItem('1 day', 24 * 60 * 60)
 
     def _init_graph_view(self):
         self.plot = QtCharts.QChart()
         self.ui.graph.setChart(self.plot)
 
-        # Setting X-axis
         self.axis_x = QtCharts.QDateTimeAxis()
         self.axis_x.setTickCount(10)
-        # self.axis_x.setLabelsAngle(70)
         self.axis_x.setFormat("hh:mm:ss")
         self.axis_x.setTitleText("Date")
         self.axis_x.setMax(QtCore.QDateTime.currentDateTime().addSecs(60))
         self.axis_x.setMin(QtCore.QDateTime.currentDateTime())
 
-        # Setting Y-axis
         self.axis_y = QtCharts.QValueAxis()
         self.axis_y.setTickCount(7)
         self.axis_y.setLabelFormat("%i")
@@ -196,7 +206,7 @@ class MainDialog(QDialog):
         self._started_time = datetime.datetime.now()
         self.started.emit()
 
-        self.ui.start_stop.setText('Cancel')
+        self.ui.start_stop.setText('Stop')
         self.ui.start_stop.clicked.disconnect()
         self.ui.start_stop.clicked.connect(self._cancel_ping)
 
@@ -265,7 +275,7 @@ class MainDialog(QDialog):
         self.ui.start_stop.clicked.disconnect()
         self.ui.start_stop.clicked.connect(self._start_ping)
 
-        logger.info(f"Pinging {'done' if done else 'canceled'}")
+        logger.info(f"Pinging {'done' if done else 'stopped'}")
 
     def _is_pinging(self) -> bool:
         return self._thread is not None and self._thread.isRunning()
@@ -331,8 +341,14 @@ class MainDialog(QDialog):
         cur_time = QtCore.QDateTime.currentDateTime()
         self.series.append(cur_time.toMSecsSinceEpoch(), ping_value)
 
-        x_min, x_max = min(cur_time, cur_time.addSecs(-60)), cur_time
+        x_min, x_max = min(cur_time, cur_time.addSecs(-1 * self.ui.graph_visible_interval.currentData())), cur_time
         y_min, y_max = min(ping_value, self.axis_y.min()), max(ping_value, self.axis_y.max())
 
         self.axis_x.setRange(x_min, x_max)
         self.axis_y.setRange(y_min, y_max)
+
+    @Slot()
+    def _change_graph_visible_interval(self):
+        right_value = self.axis_x.max()
+        x_min, x_max = right_value.addSecs(-1 * self.ui.graph_visible_interval.currentData()), self.axis_x.max()
+        self.axis_x.setRange(x_min, x_max)
