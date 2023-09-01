@@ -1,8 +1,11 @@
 import datetime
+import random
+import time
 from typing import List
 
-from PySide6 import QtCore
-from PySide6.QtCore import Slot, Signal, QTimer, QThread
+from PySide6 import QtCore, QtCharts
+from PySide6.QtCharts import QDateTimeAxis, QSplineSeries, QValueAxis, QLineSeries, QChart
+from PySide6.QtCore import Slot, Signal, QTimer, QThread, QDateTime, QPoint
 from PySide6.QtWidgets import QDialog
 
 from dp_ping_monitor import __version__
@@ -86,27 +89,40 @@ class MainDialog(QDialog):
         event.accept()
 
     def _init_controls(self):
-        # username = settings.get_settings_str_value(SettingsKey.USERNAME, getpass.getuser())
-        # self.ui.username.setText(username)
-        #
-        # out_image_path = settings.get_settings_str_value(SettingsKey.OUT_IMAGE_PATH, config.defaults.out_image_path)
-        # abs_out_image_path = os.path.abspath(out_image_path)
-        # self.ui.output_folder.setText(abs_out_image_path)
-        #
-        # out_image_name = settings.get_settings_str_value(SettingsKey.OUT_IMAGE_BASE_NAME,
-        #                                                  config.defaults.out_image_base_name)
-        # self.ui.image_filename_template.setText(out_image_name)
-        #
-        # min_percent = settings.get_settings_float_value(SettingsKey.MIN_PERCENT, config.defaults.min_percent)
-        # self.ui.min_percent.setValue(min_percent)
-
         servers = settings.get_settings_list_value(SettingsKey.RECENT_SERVERS, [])
         if len(servers) == 0:
             servers = config.defaults.servers
 
         self.ui.recent_servers.addItems(servers)
 
+        self._init_graph_view()
         self._init_about_program()
+
+    def _init_graph_view(self):
+        self.plot = QtCharts.QChart()
+        self.ui.graph.setChart(self.plot)
+
+        # Setting X-axis
+        self.axis_x = QtCharts.QDateTimeAxis()
+        self.axis_x.setTickCount(10)
+        # self.axis_x.setLabelsAngle(70)
+        self.axis_x.setFormat("hh:mm:ss")
+        self.axis_x.setTitleText("Date")
+        self.axis_x.setMax(QtCore.QDateTime.currentDateTime().addSecs(60))
+        self.axis_x.setMin(QtCore.QDateTime.currentDateTime())
+
+        # Setting Y-axis
+        self.axis_y = QtCharts.QValueAxis()
+        self.axis_y.setTickCount(7)
+        self.axis_y.setLabelFormat("%i")
+        self.axis_y.setTitleText("Ping [ms]")
+        self.axis_y.setMax(200)
+        self.axis_y.setMin(0)
+
+        self.plot.setAxisX(self.axis_x)
+        self.plot.setAxisY(self.axis_y)
+
+        self.ui.graph.setChart(self.plot)
 
     def _init_about_program(self):
         self.ui.program_name_n_version.setText(
@@ -166,6 +182,14 @@ class MainDialog(QDialog):
         logger.info('Start collecting statistics...')
 
         self._ping_stats.reset()
+
+        self.series = QtCharts.QSplineSeries()
+        # self.series.setName("Ping")
+        self.plot.addSeries(self.series)
+        self.series.setName(self.ui.recent_servers.currentText())
+
+        self.plot.setAxisX(self.axis_x, self.series)
+        self.plot.setAxisY(self.axis_y, self.series)
 
         self._set_all_controls_enabled(False)
 
@@ -254,16 +278,18 @@ class MainDialog(QDialog):
     @Slot()
     def _update_cur_stats(self):
         # self.ui.stats_status.setText(f'<p style="color:green;">Statistics Ready (gen. {gen_datetime_str})</p')
-        cli_ret_code = self._proc_mon.is_cli_done()
+        # cli_ret_code = self._proc_mon.is_cli_done()
         lines = self._proc_mon.lines if self._proc_mon else []
-        # print(lines)
+        print(lines)
         for line in lines:
             cur_ping = ping_output_parser.parse_line(line)
             print(cur_ping)
             if cur_ping is not None:
                 self._ping_stats.add(cur_ping)
+                self._add_ping_to_graph(cur_ping)
 
         self._update_stats_controls()
+        pass
 
     def _update_stats_controls(self):
         if self._started_time:
@@ -285,12 +311,12 @@ class MainDialog(QDialog):
 
             duration_str = ''
             if days > 0:
-                duration_str += f'{days}d '
+                duration_str += f'{days} d '
             if hours > 0:
-                duration_str += f'{hours:02}h '
+                duration_str += f'{hours:02} h '
             if mins > 0:
-                duration_str += f'{mins:02}m '
-            duration_str += f'{secs:02}s'
+                duration_str += f'{mins:02} m '
+            duration_str += f'{secs:02} s'
 
             self.ui.duration.setText(duration_str)
         else:
@@ -300,3 +326,13 @@ class MainDialog(QDialog):
         self.ui.avg_ping.setText(f'{self._ping_stats.avg:.02f}')
         self.ui.min_ping.setText(str(self._ping_stats.min))
         self.ui.max_ping.setText(str(self._ping_stats.max))
+
+    def _add_ping_to_graph(self, ping_value: int):
+        cur_time = QtCore.QDateTime.currentDateTime()
+        self.series.append(cur_time.toMSecsSinceEpoch(), ping_value)
+
+        x_min, x_max = min(cur_time, cur_time.addSecs(-60)), cur_time
+        y_min, y_max = min(ping_value, self.axis_y.min()), max(ping_value, self.axis_y.max())
+
+        self.axis_x.setRange(x_min, x_max)
+        self.axis_y.setRange(y_min, y_max)
