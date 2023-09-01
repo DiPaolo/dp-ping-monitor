@@ -33,15 +33,16 @@ class Ui_Dialog(object):
 
         self.horizontalLayout.addWidget(self.label)
 
-        self.server = QComboBox(Dialog)
-        self.server.setObjectName(u"server")
+        self.recent_servers = QComboBox(Dialog)
+        self.recent_servers.setObjectName(u"recent_servers")
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.server.sizePolicy().hasHeightForWidth())
-        self.server.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.recent_servers.sizePolicy().hasHeightForWidth())
+        self.recent_servers.setSizePolicy(sizePolicy)
+        self.recent_servers.setEditable(False)
 
-        self.horizontalLayout.addWidget(self.server)
+        self.horizontalLayout.addWidget(self.recent_servers)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout)

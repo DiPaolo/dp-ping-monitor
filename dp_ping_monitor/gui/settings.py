@@ -12,6 +12,8 @@ class SettingsKey(Enum):
 
     LOG_WINDOW_GEOMETRY = 'logWindowGeometry'
 
+    RECENT_SERVERS = 'recentServers'
+
 
 def _get_settings():
     settings = QSettings()

@@ -1,4 +1,5 @@
 import datetime
+from typing import List
 
 from PySide6 import QtCore
 from PySide6.QtCore import Slot, Signal, QTimer, QThread
@@ -58,6 +59,8 @@ class MainDialog(QDialog):
             # self.ui.username, self.ui.token
         ]]
 
+        self.ui.recent_servers.currentIndexChanged.connect(self._on_cur_server_changed)
+
         # start/stop + exit
         self.ui.start_stop.clicked.connect(self._start_ping)
 
@@ -97,6 +100,12 @@ class MainDialog(QDialog):
         # min_percent = settings.get_settings_float_value(SettingsKey.MIN_PERCENT, config.defaults.min_percent)
         # self.ui.min_percent.setValue(min_percent)
 
+        servers = settings.get_settings_list_value(SettingsKey.RECENT_SERVERS, [])
+        if len(servers) == 0:
+            servers = config.defaults.servers
+
+        self.ui.recent_servers.addItems(servers)
+
         self._init_about_program()
 
     def _init_about_program(self):
@@ -112,6 +121,36 @@ class MainDialog(QDialog):
             f"(<a href='mailto:{__version__.__author_email__}'>{__version__.__author_email__}</a>)"
             f"</p>"
         )
+
+    def _on_cur_server_changed(self, idx: int):
+        recent_servers = self._get_recent_servers_from_combo()
+
+        # move the currently chosen dir to the top
+        cur_server = self.ui.recent_servers.itemText(idx)
+        recent_servers.remove(cur_server)
+        recent_servers.insert(0, cur_server)
+
+        # to avoid infinite slot calls
+        self.ui.recent_servers.currentIndexChanged.disconnect()
+
+        self.ui.recent_servers.clear()
+        for d in recent_servers:
+            self.ui.recent_servers.addItem(d)
+
+        self.ui.recent_servers.setCurrentIndex(0)
+
+        # connect it back
+        self.ui.recent_servers.currentIndexChanged.connect(self._on_cur_server_changed)
+
+        # update settings
+        settings.set_settings_list_value(SettingsKey.RECENT_SERVERS, self._get_recent_servers_from_combo())
+
+    def _get_recent_servers_from_combo(self) -> List[str]:
+        recent_dirs = list()
+        for i in range(0, self.ui.recent_servers.count()):
+            recent_dirs.append(self.ui.recent_servers.itemText(i))
+
+        return recent_dirs
 
     def _update_start_stop_status(self):
         elems = [
@@ -137,7 +176,7 @@ class MainDialog(QDialog):
         self.ui.start_stop.clicked.disconnect()
         self.ui.start_stop.clicked.connect(self._cancel_ping)
 
-        self._proc_mon = ProcessMonitor('ping', ['google.com'])
+        self._proc_mon = ProcessMonitor('ping', [self.ui.recent_servers.currentText()])
         self._proc_mon.start()
 
         self._thread = QThread()
@@ -209,7 +248,7 @@ class MainDialog(QDialog):
 
     def _set_all_controls_enabled(self, enabled: bool = True):
         [elem.setEnabled(enabled) for elem in [
-            # self.ui.username, self.ui.token, self.ui.image_filename_template, self.ui.choose_out_image_dir
+            self.ui.recent_servers
         ]]
 
     @Slot()

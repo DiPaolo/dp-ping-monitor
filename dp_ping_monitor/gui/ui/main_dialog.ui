@@ -24,12 +24,15 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="server">
+      <widget class="QComboBox" name="recent_servers">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="editable">
+        <bool>false</bool>
        </property>
       </widget>
      </item>

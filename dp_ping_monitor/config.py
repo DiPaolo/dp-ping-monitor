@@ -1,5 +1,6 @@
 import enum
 import os
+from typing import List
 
 _ENV_PARAM_PREFIX = 'DP_PING_MON'
 
@@ -104,12 +105,7 @@ class Defaults(object):
     _instance = None
 
     _use_cache = True
-    _out_image_path = '.'
-    _out_image_base_name = 'github_lang_stats-%Y_%m_%d-%H_%M_%S.png'
-    _min_percent = 1.0
-
-    _image_width = 1280
-    _image_height = 720
+    _servers = ['google.com', 'ya.ru', 'cctv.com']
 
     def __init__(self):
         pass
@@ -128,24 +124,8 @@ class Defaults(object):
         return self._use_cache
 
     @property
-    def out_image_path(self) -> str:
-        return self._out_image_path
-
-    @property
-    def out_image_base_name(self) -> str:
-        return self._out_image_base_name
-
-    @property
-    def min_percent(self) -> float:
-        return self._min_percent
-
-    @property
-    def image_width(self) -> int:
-        return self._image_width
-
-    @property
-    def image_height(self) -> int:
-        return self._image_height
+    def servers(self) -> List[str]:
+        return self._servers
 
 
 class Config(object):
