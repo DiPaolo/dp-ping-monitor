@@ -126,7 +126,7 @@ class MainDialog(QDialog):
         self.axis_y.setTickCount(7)
         self.axis_y.setLabelFormat("%i")
         self.axis_y.setTitleText("Ping [ms]")
-        self.axis_y.setMax(200)
+        self.axis_y.setMax(100)
         self.axis_y.setMin(0)
 
         self.plot.setAxisX(self.axis_x)
