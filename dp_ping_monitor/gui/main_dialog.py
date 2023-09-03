@@ -3,10 +3,11 @@ import random
 import time
 from typing import List
 
-from PySide6 import QtCore, QtCharts
+from PySide6 import QtCore, QtCharts, QtGui
 from PySide6.QtCharts import QDateTimeAxis, QSplineSeries, QValueAxis, QLineSeries, QChart
 from PySide6.QtCore import Slot, Signal, QTimer, QThread, QDateTime, QPoint
-from PySide6.QtWidgets import QDialog
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog, QSystemTrayIcon, QMenu
 
 from dp_ping_monitor import __version__
 from dp_ping_monitor.config import config
@@ -69,6 +70,20 @@ class MainDialog(QDialog):
         self.ui.start_stop.clicked.connect(self._start_ping)
 
         #
+        # init system tray icon
+        #
+        self.tray_icon = QSystemTrayIcon(QIcon(':/icons/app_icon.png'))
+        self.tray_icon.activated.connect(self._on_tray_icon_activated)
+        self.tray_icon.show()
+        # self.started.connect(
+        #     lambda: self.tray_icon.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogYesButton)))
+        # self.stopped.connect(
+        #     lambda: self.tray_icon.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogNoButton)))
+
+        self.tray_context_menu = self._create_tray_context_menu()
+
+
+        #
         # initialization of controls
         #
 
@@ -88,6 +103,39 @@ class MainDialog(QDialog):
         settings.set_settings_byte_array_value(SettingsKey.WINDOW_STATE, self.windowState())
 
         event.accept()
+
+    def _create_tray_context_menu(self) -> QMenu:
+        menu = QMenu(self)
+        start_action = menu.addAction('Start')
+        stop_action = menu.addAction('Stop')
+        menu.addSeparator()
+        quit_action = menu.addAction('Quit')
+
+        start_action.triggered.connect(self._start_ping)
+        stop_action.triggered.connect(self._cancel_ping)
+        quit_action.triggered.connect(self.close)
+
+        def update_start_stop_actions():
+            print(f'is pinging={self._is_pinging()}')
+            start_action.setEnabled(not self._is_pinging())
+            stop_action.setEnabled(self._is_pinging())
+
+        self.started.connect(update_start_stop_actions)
+        self.stopped.connect(update_start_stop_actions)
+
+        # initial state
+        update_start_stop_actions()
+
+        return menu
+
+    @Slot(QSystemTrayIcon.ActivationReason)
+    def _on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            # show/hide main window
+            self.hide() if self.isVisible() else self.show()
+        elif reason == QSystemTrayIcon.ActivationReason.Context:
+            # show context menu
+            self.tray_context_menu.popup(QtGui.QCursor.pos())
 
     def _init_controls(self):
         servers = settings.get_settings_list_value(SettingsKey.RECENT_SERVERS, [])
@@ -203,9 +251,6 @@ class MainDialog(QDialog):
 
         self._set_all_controls_enabled(False)
 
-        self._started_time = datetime.datetime.now()
-        self.started.emit()
-
         self.ui.start_stop.setText('Stop')
         self.ui.start_stop.clicked.disconnect()
         self.ui.start_stop.clicked.connect(self._cancel_ping)
@@ -213,7 +258,7 @@ class MainDialog(QDialog):
         self._proc_mon = ProcessMonitor('ping', [self.ui.recent_servers.currentText()])
         self._proc_mon.start()
 
-        self._thread = QThread()
+        # self._thread = QThread()
         # self._worker = ThreadWorker('', '')
         # self._worker.moveToThread(self._thread)
         # self._worker.started.connect(self.started)
@@ -221,11 +266,15 @@ class MainDialog(QDialog):
 
         # self._thread.started.connect(self._worker.run)
 
-        self._thread.start()
+        # self._thread.start()
 
         self._timer = QTimer()
         self._timer.timeout.connect(self._update_cur_stats)
         self._timer.start(1000)
+
+        # at the end
+        self._started_time = datetime.datetime.now()
+        self.started.emit()
 
         logger.info('Pinging started')
 
@@ -278,7 +327,7 @@ class MainDialog(QDialog):
         logger.info(f"Pinging {'done' if done else 'stopped'}")
 
     def _is_pinging(self) -> bool:
-        return self._thread is not None and self._thread.isRunning()
+        return self._proc_mon is not None
 
     def _set_all_controls_enabled(self, enabled: bool = True):
         [elem.setEnabled(enabled) for elem in [
