@@ -1,11 +1,8 @@
 import datetime
-import random
-import time
 from typing import List
 
 from PySide6 import QtCore, QtCharts, QtGui
-from PySide6.QtCharts import QDateTimeAxis, QSplineSeries, QValueAxis, QLineSeries, QChart
-from PySide6.QtCore import Slot, Signal, QTimer, QThread, QDateTime, QPoint
+from PySide6.QtCore import Slot, Signal, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QSystemTrayIcon, QMenu
 
@@ -82,7 +79,6 @@ class MainDialog(QDialog):
 
         self.tray_context_menu = self._create_tray_context_menu()
 
-
         #
         # initialization of controls
         #
@@ -144,8 +140,8 @@ class MainDialog(QDialog):
 
         self.ui.recent_servers.addItems(servers)
 
-        self._init_graph_visible_interval()
         self._init_graph_view()
+        self._init_graph_visible_interval()  # after _init_graph_view() because it needs self.axis_x
         self._init_about_program()
 
     def _init_graph_visible_interval(self):
@@ -227,9 +223,6 @@ class MainDialog(QDialog):
         return recent_dirs
 
     def _update_start_stop_status(self):
-        elems = [
-            # self.ui.username, self.ui.token
-        ]
         filled_elem_count = list(filter(lambda elem: len(elem.text()) > 0, elems))
         self.ui.start_stop.setEnabled(len(filled_elem_count) == len(elems))
 
@@ -257,16 +250,6 @@ class MainDialog(QDialog):
 
         self._proc_mon = ProcessMonitor('ping', [self.ui.recent_servers.currentText()])
         self._proc_mon.start()
-
-        # self._thread = QThread()
-        # self._worker = ThreadWorker('', '')
-        # self._worker.moveToThread(self._thread)
-        # self._worker.started.connect(self.started)
-        # self._worker.finished.connect(self._stop_ping)
-
-        # self._thread.started.connect(self._worker.run)
-
-        # self._thread.start()
 
         self._timer = QTimer()
         self._timer.timeout.connect(self._update_cur_stats)
@@ -348,7 +331,6 @@ class MainDialog(QDialog):
                 self._add_ping_to_graph(cur_ping)
 
         self._update_stats_controls()
-        pass
 
     def _update_stats_controls(self):
         if self._started_time:
