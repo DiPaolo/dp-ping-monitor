@@ -1,0 +1,152 @@
+env:
+  DP_PING_MON_VERSION_MAJOR: 0
+  DP_PING_MON_VERSION_MINOR: 0
+  DP_PING_MON_VERSION_PATCH: 0
+  DP_PING_MON_VERSION_BUILD_NUMBER: ${{ github.run_number }}
+
+name: Build & Package
+on:
+  push:
+    branches:
+      - '*'
+      - '!main'
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create release draft
+    if: contains(github.ref, 'tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release draft
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            <Will be added>
+          draft: true
+          prerelease: false
+
+      - name: Output release URL file
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+
+      - name: Save release URL file for publish
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_url
+          path: release_url.txt
+
+  static-analysis:
+    strategy:
+      matrix:
+        os: [
+          'ubuntu-22.04',
+          'windows-2019',
+          'macos-13'
+        ]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 'Set up Python ${{ matrix.python-version }}@${{ matrix.os}}: ${{ github.ref_type }} (dp_ping_monitor_${{matrix.os}}_${{github.ref_name}}_b${{github.run_number}})'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 'Install dependencies (${{ github.event.release.upload_url }} | ref_name: ${{ github.ref_name }} | ref: ${{ github.ref }})'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          # stop the build if there are Python syntax errors or undefined names
+          ruff --format=github --select=E9,F63,F7,F82 --target-version=py311 .
+          # default set of ruff rules with GitHub Annotations
+          ruff --format=github --target-version=py37 .
+
+  build-n-upload:
+    if: contains(github.ref, 'tags/v')
+    needs: [create-release, static-analysis]
+    strategy:
+      matrix:
+        os: [
+          'ubuntu-22.04',
+          'windows-2019',
+          'macos-13'
+        ]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 'Set up Python ${{ matrix.python-version }}@${{ matrix.os}}: ${{ github.ref_type }} (dp_ping_monitor_${{matrix.os}}_${{github.ref_name}}_b${{github.run_number}})'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 'Install dependencies (${{ github.event.release.upload_url }} | ref_name: ${{ github.ref_name }} | ref: ${{ github.ref }})'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 'Build binaries: GUI & CLI'
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          export DP_PING_MON_VERSION_MAJOR=$DP_PING_MON_VERSION_MAJOR
+          export DP_PING_MON_VERSION_MINOR=$DP_PING_MON_VERSION_MINOR
+          export DP_PING_MON_VERSION_PATCH=$DP_PING_MON_VERSION_PATCH
+          export DP_PING_MON_VERSION_BUILD_NUMBER=$DP_PING_MON_VERSION_BUILD_NUMBER
+
+          export DP_PING_MON_IS_DEBUG=0
+          
+          pip install pyinstaller
+          pyinstaller --name 'DP Ping Monitor' --noconsole --onedir dp_ping_monitor/gui/__main__.py
+
+          # debug
+          echo "== DEBUG ENV =="
+          python -c 'import os; print(os.environ)'
+          echo "== DEBUG ENV == DONE =="
+
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            tar -czvf dp_ping_monitor.tar.gz "dist/DP Ping Monitor"
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            tar -czvf dp_ping_monitor.tar.gz "dist/DP Ping Monitor"
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            tar -czvf dp_ping_monitor.tar.gz "dist/DP Ping Monitor"
+          fi
+
+      - name: Load release URL file from release job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+
+      - name: Get release filename & upload URL
+        id: get_release_info
+        shell: bash
+        run: |
+          echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v}
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
+        env:
+          TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+
+      - name: 'Upload artifacts'
+        if: github.ref_type == 'tag'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: dp_ping_monitor.tar.gz
+          asset_name: dp_ping_monitor_${{matrix.os}}_${{github.ref_name}}_b${{github.run_number}}
+          asset_content_type: application/gzip

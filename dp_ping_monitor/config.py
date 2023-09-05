@@ -12,7 +12,7 @@ class EnvParam(enum.Enum):
     Environment variable is constructed as following:
         param prefix + '_' + env param name
 
-    E.g. for 'VERSION_MAJOR' the real environment name is 'GSPG_VERSION_MAJOR'
+    E.g. for 'VERSION_MAJOR' the real environment name is 'DP_PING_MON_VERSION_MAJOR'
     """
     VERSION_MAJOR = (0, 'VERSION_MAJOR')
     VERSION_MINOR = (1, 'VERSION_MINOR')
