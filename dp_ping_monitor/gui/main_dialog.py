@@ -56,10 +56,6 @@ class MainDialog(QDialog):
         # self.ui.show_log_window.toggled.connect(lambda checked: self.log_window.setVisible(checked))
         # self.ui.show_log_window.setChecked(True)
 
-        [elem.textChanged.connect(self._update_start_stop_status) for elem in [
-            # self.ui.username, self.ui.token
-        ]]
-
         self.ui.recent_servers.currentIndexChanged.connect(self._on_cur_server_changed)
         self.ui.graph_visible_interval.currentIndexChanged.connect(self._change_graph_visible_interval)
 
@@ -221,10 +217,6 @@ class MainDialog(QDialog):
             recent_dirs.append(self.ui.recent_servers.itemText(i))
 
         return recent_dirs
-
-    def _update_start_stop_status(self):
-        filled_elem_count = list(filter(lambda elem: len(elem.text()) > 0, elems))
-        self.ui.start_stop.setEnabled(len(filled_elem_count) == len(elems))
 
     @Slot()
     def _start_ping(self):

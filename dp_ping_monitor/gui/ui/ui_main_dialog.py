@@ -9,16 +9,11 @@
 ################################################################################
 
 from PySide6.QtCharts import QChartView
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QGridLayout,
-    QHBoxLayout, QLabel, QPushButton, QSizePolicy,
-    QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
+from PySide6.QtWidgets import (QComboBox, QGridLayout,
+                               QHBoxLayout, QLabel, QPushButton, QSizePolicy,
+                               QSpacerItem, QVBoxLayout)
+
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -44,7 +39,6 @@ class Ui_Dialog(object):
         self.recent_servers.setEditable(False)
 
         self.horizontalLayout.addWidget(self.recent_servers)
-
 
         self.verticalLayout_2.addLayout(self.horizontalLayout)
 
@@ -109,7 +103,6 @@ class Ui_Dialog(object):
 
         self.gridLayout.addWidget(self.label_4, 2, 0, 1, 1)
 
-
         self.verticalLayout.addLayout(self.gridLayout)
 
         self.horizontalLayout_4 = QHBoxLayout()
@@ -128,9 +121,7 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_4.addWidget(self.graph_visible_interval)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_4)
-
 
         self.horizontalLayout_5.addLayout(self.verticalLayout)
 
@@ -154,7 +145,6 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2.addWidget(self.start_stop)
 
-
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
 
         self.verticalSpacer_2 = QSpacerItem(20, 12, QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -165,7 +155,7 @@ class Ui_Dialog(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.program_name_n_version = QLabel(Dialog)
         self.program_name_n_version.setObjectName(u"program_name_n_version")
-        self.program_name_n_version.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.program_name_n_version.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
 
         self.horizontalLayout_3.addWidget(self.program_name_n_version)
 
@@ -179,13 +169,12 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_3.addWidget(self.copyright)
 
-
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
-
 
         self.retranslateUi(Dialog)
 
         QMetaObject.connectSlotsByName(Dialog)
+
     # setupUi
 
     def retranslateUi(self, Dialog):
@@ -206,4 +195,3 @@ class Ui_Dialog(object):
         self.program_name_n_version.setText(QCoreApplication.translate("Dialog", u"<program name & version>", None))
         self.copyright.setText(QCoreApplication.translate("Dialog", u"<copyright>", None))
     # retranslateUi
-

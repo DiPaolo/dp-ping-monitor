@@ -8,16 +8,10 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QGridLayout, QHeaderView,
-    QMainWindow, QPushButton, QSizePolicy, QSpacerItem,
-    QTableWidget, QTableWidgetItem, QWidget)
+from PySide6.QtCore import (QCoreApplication, QMetaObject)
+from PySide6.QtWidgets import (QAbstractItemView, QGridLayout, QPushButton, QSizePolicy, QSpacerItem,
+                               QTableWidget, QTableWidgetItem, QWidget)
+
 
 class Ui_LogWindow(object):
     def setupUi(self, LogWindow):
@@ -63,6 +57,7 @@ class Ui_LogWindow(object):
         self.retranslateUi(LogWindow)
 
         QMetaObject.connectSlotsByName(LogWindow)
+
     # setupUi
 
     def retranslateUi(self, LogWindow):
@@ -70,10 +65,9 @@ class Ui_LogWindow(object):
         self.close.setText(QCoreApplication.translate("LogWindow", u"Close", None))
         self.clear.setText(QCoreApplication.translate("LogWindow", u"Clear", None))
         ___qtablewidgetitem = self.log_list.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("LogWindow", u"Time", None));
+        ___qtablewidgetitem.setText(QCoreApplication.translate("LogWindow", u"Time", None))
         ___qtablewidgetitem1 = self.log_list.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("LogWindow", u"Severity", None));
+        ___qtablewidgetitem1.setText(QCoreApplication.translate("LogWindow", u"Severity", None))
         ___qtablewidgetitem2 = self.log_list.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("LogWindow", u"Message", None));
+        ___qtablewidgetitem2.setText(QCoreApplication.translate("LogWindow", u"Message", None))
     # retranslateUi
-

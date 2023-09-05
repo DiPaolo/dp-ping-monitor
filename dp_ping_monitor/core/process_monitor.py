@@ -52,7 +52,7 @@ class ProcessMonitor(threading.Thread):
 
             try:
                 self._proc.wait(10)
-            except:
+            except subprocess.TimeoutExpired:
                 self._proc.kill()
 
             self._proc = None
